@@ -8,5 +8,5 @@ The project can be demoed at [https://kristofferstrube.github.io/Blazor.BanditAl
 - Implement other Bandit algorithms
 - Make datasets customizable
   - Add bernoulli arms
-  - Add bernoulli arms with changin mean
+  - Add bernoulli arms with changing mean values
 - Move the running of the algorithm to a web worker using the [Tewr.BlazorWorker](https://github.com/Tewr/BlazorWorker) package.
