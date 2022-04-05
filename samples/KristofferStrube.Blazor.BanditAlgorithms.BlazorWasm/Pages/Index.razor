@@ -1,0 +1,128 @@
+﻿@page "/"
+
+<PageTitle>Exp3</PageTitle>
+
+The following is a setup with static rewards where Exp3 (k=@_k, eta=@_eta) then tries to exploit the actions that gives the best rewards while still exploring all to see if some change to be better over time.
+
+<br />
+<br />
+@if (_banditAlgorithm is null)
+{
+    <label for="k">k (arms):</label>
+    <input id="k" @bind-value="_k" type="number" style="width:100px;" />
+    <br />
+    <label for="eta">eta:</label>
+    <input id="eta" @bind-value="_eta" type="number" style="width:100px;" step="any" />
+    <br />
+    <br />
+    <button class="btn btn-primary" @onclick=Initialize>Initialize Weights</button>
+}
+else
+{
+    <button class="btn btn-primary" @onclick=Iterate>Make One Iteration</button>
+    <br />
+    <br />
+    @if (_iterating)
+    {
+        <button class="btn btn-primary" @onclick="() => _iterating = false">Stop Iterating</button>
+    }
+    else
+    {
+        <button class="btn btn-primary" @onclick=KeepIterating>Keep Iterating</button>
+    }
+    <label for="delay">&nbsp;delay (ms):</label>
+    <input id="delay" @bind-value="_delay" type="number" style="width:100px;" step="any" />
+    <br />
+    <br />
+    <b>Iterations:</b> @_iterations
+    <br />
+    <b>Accumulative Regret:</b> @string.Format("{0:0.000}", _accumRegret)
+    <br />
+    <b>Average Regret pr. Iteration:</b> @string.Format("{0:0.000}", _accumRegret/_iterations)
+    <br />
+    <br />
+    <h2>Static Rewards</h2>
+    <table width="100%">
+        <tr>
+            @foreach (var reward in _dataSetRewards)
+            {
+                <td style="border:1px solid black;" width="auto">@string.Format("{0:0.00}", reward)</td>
+            }
+        </tr>
+    </table>
+
+    <h2>Internal Weights of Exp3</h2>
+    <svg width="100vw" height="300">
+        @for (int i = 0; i < _banditAlgorithm.K; i++)
+        {
+            <rect x="@(((i * 3 + 1) * 100.0 / (_banditAlgorithm.K * 3)).AsString())vw"
+          y="0"
+          width="@((100.0 / (_banditAlgorithm.K * 3)).AsString())vw"
+          height="@((300.0 * (_banditAlgorithm.Weights[i] - _banditAlgorithm.Weights.Min()) / (_banditAlgorithm.Weights.Max() - _banditAlgorithm.Weights.Min())).AsString())"
+          fill="red">
+            </rect>
+            <text>
+                <text x="5"
+              y="-@(((i * 3 + 1) * 100.0 / (_banditAlgorithm.K * 3)).AsString())vw"
+              fill="black"
+              text-anchor="start"
+              transform="rotate(90)">
+                    @Math.Round(_banditAlgorithm.Weights[i], 2)
+                </text>
+            </text>
+        }
+    </svg>
+}
+
+@code {
+    private int _k = 10;
+    private double _eta = 0.001;
+
+    private IBanditAlgorithm _banditAlgorithm;
+    private IDataSet _staticDataSet;
+
+    private bool _iterating;
+    private int _iterations;
+    private double _accumRegret;
+
+    private double _delay = 1;
+    private double _accumDelay = 0;
+
+    private double[] _dataSetRewards;
+
+    private void Initialize()
+    {
+        _dataSetRewards = Enumerable.Range(0, _k).Select(_ => Random.Shared.NextDouble()).OrderBy(x => x).ToArray();
+        _banditAlgorithm = new Exp3(_k, _eta);
+        _staticDataSet = new StaticDataSet(_dataSetRewards);
+    }
+
+    private void Iterate()
+    {
+        var action = _banditAlgorithm.SampleAction();
+        var (reward, regret) = _staticDataSet.Choose(action);
+        _banditAlgorithm.UpdateWeights(action, reward);
+        _accumRegret += regret;
+        _iterations++;
+        StateHasChanged();
+    }
+
+    private async Task KeepIterating()
+    {
+        await Task.Run(async () =>
+        {
+            _iterating = true;
+            while (_iterating)
+            {
+                if (_delay <= 0) _delay = 1;
+                _accumDelay += _delay;
+                if (_accumDelay >= 1)
+                {
+                    await Task.Delay((int)_accumDelay);
+                    _accumDelay = _accumDelay % 1;
+                }
+                Iterate();
+            }
+        });
+    }
+}

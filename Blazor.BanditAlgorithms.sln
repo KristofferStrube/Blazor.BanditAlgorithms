@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32210.308
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KristofferStrube.Blazor.BanditAlgorithms", "src\KristofferStrube.Blazor.BanditAlgorithms\KristofferStrube.Blazor.BanditAlgorithms.csproj", "{4113AECA-D861-4F8C-AA80-9F454BDE7D73}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KristofferStrube.Blazor.BanditAlgorithms.BlazorWasm", "samples\KristofferStrube.Blazor.BanditAlgorithms.BlazorWasm\KristofferStrube.Blazor.BanditAlgorithms.BlazorWasm.csproj", "{25ABB1FD-A201-4012-BE66-4033AD0B8627}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4113AECA-D861-4F8C-AA80-9F454BDE7D73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4113AECA-D861-4F8C-AA80-9F454BDE7D73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4113AECA-D861-4F8C-AA80-9F454BDE7D73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4113AECA-D861-4F8C-AA80-9F454BDE7D73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{25ABB1FD-A201-4012-BE66-4033AD0B8627}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{25ABB1FD-A201-4012-BE66-4033AD0B8627}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{25ABB1FD-A201-4012-BE66-4033AD0B8627}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{25ABB1FD-A201-4012-BE66-4033AD0B8627}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A6AEA2AB-B7A1-4AF3-9AD8-A59AD02B952E}
+	EndGlobalSection
+EndGlobal
