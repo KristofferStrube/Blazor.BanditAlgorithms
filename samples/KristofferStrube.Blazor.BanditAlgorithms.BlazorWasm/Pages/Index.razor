@@ -14,6 +14,15 @@ The following is a setup with static rewards where Exp3 (k=@_k, eta=@_eta) then 
     <label for="eta">eta:</label>
     <input id="eta" @bind-value="_eta" type="number" style="width:100px;" step="any" />
     <br />
+    <label for="dataset">dataset:</label>
+    <select class="form-control selectpicker" @bind="_chosenDataset">
+        <option>--select--</option>
+        @foreach (var item in _datasets)
+        {
+            <option value="@item.id">@item.name</option>
+        }
+    </select>
+    <br />
     <br />
     <button class="btn btn-primary" @onclick=Initialize>Initialize Weights</button>
 }
@@ -41,12 +50,15 @@ else
     <b>Average Regret pr. Iteration:</b> @string.Format("{0:0.000}", _accumRegret/_iterations)
     <br />
     <br />
-    <h2>Static Rewards</h2>
+    <h2>Rewards</h2>
     <table width="100%">
         <tr>
-            @foreach (var reward in _dataSetRewards)
+            @for (int i = 0; i < _dataSet.NormalizedRewards.Count(); i++)
             {
-                <td style="border:1px solid black;" width="auto">@string.Format("{0:0.00}", reward)</td>
+                int j = i;
+                <td style="border:1px solid black;" width="auto">
+                    <input @bind-value=_dataSet.NormalizedRewards[j] style="width:100%;" />
+                </td>
             }
         </tr>
     </table>
@@ -77,9 +89,16 @@ else
 @code {
     private int _k = 10;
     private double _eta = 0.001;
+    private int _chosenDataset = 0;
+
+    private List<(string name, int id)> _datasets = new()
+    {
+        ("Static Dataset", 0),
+        ("Mod2 for 2000 rounds Dataset", 1),
+    };
 
     private IBanditAlgorithm _banditAlgorithm;
-    private IDataSet _staticDataSet;
+    private IDataSet _dataSet;
 
     private bool _iterating;
     private int _iterations;
@@ -88,19 +107,20 @@ else
     private double _delay = 1;
     private double _accumDelay = 0;
 
-    private double[] _dataSetRewards;
-
     private void Initialize()
     {
-        _dataSetRewards = Enumerable.Range(0, _k).Select(_ => Random.Shared.NextDouble()).OrderBy(x => x).ToArray();
         _banditAlgorithm = new Exp3(_k, _eta);
-        _staticDataSet = new StaticDataSet(_dataSetRewards);
+        _dataSet = _chosenDataset switch
+        {
+            0 => new StaticDataSet(Enumerable.Range(0, _k).Select(_ => Random.Shared.NextDouble()).OrderBy(x => x).ToArray()),
+            _ => new Mod2DataSet(_k)
+        };
     }
 
     private void Iterate()
     {
         var action = _banditAlgorithm.SampleAction();
-        var (reward, regret) = _staticDataSet.Choose(action);
+        var (reward, regret) = _dataSet.Choose(action);
         _banditAlgorithm.UpdateWeights(action, reward);
         _accumRegret += regret;
         _iterations++;
