@@ -2,17 +2,18 @@
 
 <PageTitle>Exp3</PageTitle>
 
-The following is a setup with static rewards where Exp3 (k=@_k, eta=@_eta) then tries to exploit the actions that gives the best rewards while still exploring all to see if some change to be better over time.
-
-<br />
-<br />
 @if (_banditAlgorithm is null)
 {
+    <text>
+    Please configure the experiments for your liking.
+    </text>
+    <br />
+    <br />
     <label for="k">k (arms):</label>
     <input id="k" @bind-value="_k" type="number" style="width:100px;" />
     <br />
-    <label for="eta">eta:</label>
-    <input id="eta" @bind-value="_eta" type="number" style="width:100px;" step="any" />
+    <label for="gamma">gamma:</label>
+    <input id="gamma" @bind-value="_gamma" type="number" style="width:100px;" step="any" />
     <br />
     <label for="dataset">dataset:</label>
     <select class="form-control selectpicker" @bind="_chosenDataset">
@@ -27,7 +28,12 @@ The following is a setup with static rewards where Exp3 (k=@_k, eta=@_eta) then 
     <button class="btn btn-primary" @onclick=Initialize>Initialize Weights</button>
 }
 else
-{
+{   
+    <text>
+    The following is a setup with @(_dataSet is StaticDataSet ? "Static Dataset" : "Mod2 Experiment that alternates every 2000 rounds") where Exp3 (k=@_k, gamma=@_gamma) then tries to exploit the actions that gives the best rewards while still exploring all to see if some change to be better over time.
+    </text>
+    <br />
+    <br />
     <button class="btn btn-primary" @onclick=Iterate>Make One Iteration</button>
     <br />
     <br />
@@ -70,7 +76,7 @@ else
             <rect x="@(((i * 3 + 1) * 100.0 / (_banditAlgorithm.K * 3)).AsString())vw"
           y="0"
           width="@((100.0 / (_banditAlgorithm.K * 3)).AsString())vw"
-          height="@((300.0 * (_banditAlgorithm.Weights[i] - _banditAlgorithm.Weights.Min()) / (_banditAlgorithm.Weights.Max() - _banditAlgorithm.Weights.Min())).AsString())"
+          height="@((300.0 * (Math.Log(_banditAlgorithm.Weights[i]) - Math.Log(_banditAlgorithm.Weights.Min())) / (Math.Log(_banditAlgorithm.Weights.Max()) - Math.Log(_banditAlgorithm.Weights.Min()))).AsString())"
           fill="red">
             </rect>
             <text>
@@ -79,7 +85,7 @@ else
               fill="black"
               text-anchor="start"
               transform="rotate(90)">
-                    @Math.Round(_banditAlgorithm.Weights[i], 2)
+                    @Math.Round(_banditAlgorithm.Weights[i], 7)
                 </text>
             </text>
         }
@@ -88,7 +94,7 @@ else
 
 @code {
     private int _k = 10;
-    private double _eta = 0.001;
+    private double _gamma = 0.1;
     private int _chosenDataset = 0;
 
     private List<(string name, int id)> _datasets = new()
@@ -109,7 +115,7 @@ else
 
     private void Initialize()
     {
-        _banditAlgorithm = new Exp3(_k, _eta);
+        _banditAlgorithm = new Exp3(_k, _gamma);
         _dataSet = _chosenDataset switch
         {
             0 => new StaticDataSet(Enumerable.Range(0, _k).Select(_ => Random.Shared.NextDouble()).OrderBy(x => x).ToArray()),
@@ -119,9 +125,9 @@ else
 
     private void Iterate()
     {
-        var action = _banditAlgorithm.SampleAction();
+        var action = _banditAlgorithm.Choose();
         var (reward, regret) = _dataSet.Choose(action);
-        _banditAlgorithm.UpdateWeights(action, reward);
+        _banditAlgorithm.GiveReward(action, reward);
         _accumRegret += regret;
         _iterations++;
         StateHasChanged();

@@ -4,40 +4,49 @@ public class Exp3 : IBanditAlgorithm
 {
     private double _lastDrawnProbability;
 
-    public Exp3(int k, double eta)
+    public Exp3(int k, double gamma)
     {
-        Weights = new double[k];
         K = k;
-        Eta = eta;
+        Gamma = gamma;
+        Weights = new double[k];
     }
+
+    public Exp3(Exp3 prototype) {
+        Weights = prototype.Weights;
+        K = prototype.K;
+        Gamma = prototype.Gamma;
+    }
+
     public double[] Weights { get; private set; }
     public int K { get; init; }
-    public double Eta { get; init; }
+    public double Gamma { get; init; }
 
-    public int SampleAction()
+    public int Choose()
     {
-        IEnumerable<double>? expWeights = Weights.Select(weight => Math.Exp(Eta * weight));
+        // Calculating propabilities using Sum Of Powers Trick
+        double maxWeight = Weights.Max();
+        double sumReducedPowerWeights = Weights
+            .Sum(w => Math.Exp(Gamma / K * (w - maxWeight)));
+        IEnumerable<double> probabilities = Weights
+            .Select(w => (1.0 - Gamma) * Math.Exp(Gamma / K * (w - maxWeight) - Math.Log(sumReducedPowerWeights)) + Gamma / K);
 
-        (IEnumerable<double> cums, double sum) = expWeights
+        // Sampling using a cummulative sum of the probabilities
+        IEnumerable<double> cumProbabilities = probabilities
             .Aggregate(
-                (cums: Enumerable.Empty<double>(), sum: 0.0),
-                (prev, curr) => (prev.cums.Append(prev.sum + curr), prev.sum + curr)
+                Enumerable.Empty<double>(),
+                (list, probability) => list.Append((list.Count() > 0 ? list.Last() : 0) + probability)
             );
-
         double rand = Random.Shared.NextDouble();
-        int sample = cums.TakeWhile(cum => cum / sum < rand).Count();
+        int sample = cumProbabilities.TakeWhile(cum => cum < rand).Count();
 
-        _lastDrawnProbability = expWeights.ElementAt(sample) / sum;
-        if (Weights.All(w => w == 0)) _lastDrawnProbability = 1.0 / K;
-
+        _lastDrawnProbability = probabilities.ElementAt(sample);
         return sample;
     }
 
-    public void UpdateWeights(int action, double reward)
+    public void GiveReward(int action, double feedback)
     {
-        for (int i = 0; i < K; i++)
-        {
-            Weights[i] = Weights[i] + 1 - (action == i ? 1 : 0) * (1 - reward) / _lastDrawnProbability;
-        }
+        double EstimatedReward = feedback / _lastDrawnProbability;
+        double newWeight = Gamma * (_lastDrawnProbability + EstimatedReward) / K;
+        Weights[action] = newWeight;
     }
 }

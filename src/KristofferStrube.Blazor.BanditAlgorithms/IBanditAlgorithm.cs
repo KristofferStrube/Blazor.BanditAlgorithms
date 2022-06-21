@@ -4,6 +4,6 @@ public interface IBanditAlgorithm
 {
     public double[] Weights { get; }
     public int K { get; }
-    public int SampleAction();
-    public void UpdateWeights(int action, double reward);
+    public int Choose();
+    public void GiveReward(int action, double reward);
 }
