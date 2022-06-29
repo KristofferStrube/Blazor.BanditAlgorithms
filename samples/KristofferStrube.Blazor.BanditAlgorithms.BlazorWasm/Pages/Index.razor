@@ -1,5 +1,5 @@
 ﻿@page "/"
-@using System.Text
+@inject IWorkerFactory workerFactory
 
 <PageTitle>Exp3</PageTitle>
 
@@ -48,7 +48,7 @@ else
             {
                 <button class="btn btn-success" @onclick=KeepIterating>Keep Iterating</button>
             }
-            <label for="delay">&nbsp;delay (ms):</label>
+            <label for="delay">&nbsp; render delay (ms):</label>
             <input id="delay" @bind-value="_delay" type="number" style="width:100px;" step="any" />
             <br />
             <br />
@@ -58,7 +58,7 @@ else
             }
             else
             {
-                <button class="btn btn-info" @onclick="() => {_showRegretPlot = true; StateHasChanged();}">Show Regret Plot</button>
+                <button class="btn btn-info" @onclick="() => {_showRegretPlot = true; KeepShowingRegretPlot(); StateHasChanged();}">Show Regret Plot</button>
             }
         </div>
         <div class="col col-sm-4">
@@ -75,7 +75,7 @@ else
                     <path stroke="red"
                   stroke-width="1"
                   fill="none"
-                  d="@RegretLine()">
+                  d="@_regretPathData">
 
                     </path>
                 </svg>
@@ -145,6 +145,23 @@ else
 
     private List<double> _accumRegretHistory = new();
     private bool _showRegretPlot = true;
+    private IWorkerBackgroundService<RegretLineCalculator> _service;
+    private string _regretPathData = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Create worker.
+            var worker = await workerFactory.CreateAsync();
+
+            // Create service reference. For most scenarios, it's safe (and best) to keep this
+            // reference around somewhere to avoid the startup cost.
+            _service = await worker.CreateBackgroundServiceAsync<RegretLineCalculator>();
+
+            await KeepShowingRegretPlot();
+        }
+    }
 
     private void Initialize()
     {
@@ -156,7 +173,7 @@ else
         };
     }
 
-    private void Iterate()
+    private async Task Iterate()
     {
         var action = _banditAlgorithm.Choose();
         var (reward, regret) = _dataSet.Choose(action);
@@ -181,37 +198,21 @@ else
                     await Task.Delay((int)_accumDelay);
                     _accumDelay = _accumDelay % 1;
                 }
-                Iterate();
+                await Iterate();
             }
         });
     }
 
-    private string RegretLine()
+    private async Task KeepShowingRegretPlot()
     {
-        var count = _accumRegretHistory.Count;
-        if (count > 2)
+        await Task.Run(async () =>
         {
-            var maxRegret = _accumRegretHistory.Max();
-            if (maxRegret == 0)
+            while (_showRegretPlot)
             {
-                return "";
+                await Task.Delay(10);
+                var localParameter = _accumRegretHistory.ToArray();
+                _regretPathData = await _service.RunAsync(s => s.RegretLine(localParameter));
             }
-            return PathData(_accumRegretHistory.Select((r, i) => (x: 20 + (double)i / count * 260.0, y: 280.0 - r / maxRegret * 260.0)).ToArray());
-        }
-        else
-        {
-            return "";
-        }
-    }
-
-    private string PathData((double x, double y)[] Points)
-    {
-        var sb = new StringBuilder();
-        if (Points.Length >= 2)
-        {
-            sb.Append($"M {(int)Points[0].x} {(int)Points[0].y} ");
-            sb.AppendJoin("", Points[1..].Select(p => $"L {(int)p.x} {(int)p.y} "));
-        }
-        return sb.ToString();
+        });
     }
 }

@@ -40,7 +40,6 @@ public class Exp3 : IBanditAlgorithm
         int sample = cumProbabilities.TakeWhile(cum => cum < rand).Count();
 
         _lastDrawnProbability = probabilities.ElementAt(sample);
-        Console.WriteLine(probabilities.Sum());
         return sample;
     }
 
