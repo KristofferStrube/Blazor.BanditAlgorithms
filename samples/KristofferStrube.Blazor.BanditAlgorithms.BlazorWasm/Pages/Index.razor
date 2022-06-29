@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using System.Text
 
 <PageTitle>Exp3</PageTitle>
 
@@ -57,7 +58,7 @@ else
             }
             else
             {
-                <button class="btn btn-" @onclick="() => {_showRegretPlot = true; StateHasChanged();}">Show Regret Plot</button>
+                <button class="btn btn-info" @onclick="() => {_showRegretPlot = true; StateHasChanged();}">Show Regret Plot</button>
             }
         </div>
         <div class="col col-sm-4">
@@ -70,9 +71,9 @@ else
         <div class="col col-sm-4">
             @if (_showRegretPlot)
             {
-                <svg width="300" height="200">
+                <svg width="300" height="300">
                     <path stroke="red"
-                  stroke-width="2"
+                  stroke-width="1"
                   fill="none"
                   d="@RegretLine()">
 
@@ -117,6 +118,8 @@ else
             </text>
         }
     </svg>
+    <br />
+    <br />
 }
 
 @code {
@@ -140,7 +143,7 @@ else
     private double _delay = 1;
     private double _accumDelay = 0;
 
-    private List<(double iteration, double accumRegret)> _accumRegretHistory = new();
+    private List<double> _accumRegretHistory = new();
     private bool _showRegretPlot = true;
 
     private void Initialize()
@@ -159,7 +162,7 @@ else
         var (reward, regret) = _dataSet.Choose(action);
         _banditAlgorithm.GiveReward(action, reward);
         _accumRegret += regret;
-        _accumRegretHistory.Add((_iterations, _accumRegret));
+        _accumRegretHistory.Add(_accumRegret);
         _iterations++;
         StateHasChanged();
     }
@@ -185,14 +188,15 @@ else
 
     private string RegretLine()
     {
-        if (_accumRegretHistory.Count > 2)
+        var count = _accumRegretHistory.Count;
+        if (count > 2)
         {
-            var maxRegret = _accumRegretHistory.Max(_ => _.accumRegret);
+            var maxRegret = _accumRegretHistory.Max();
             if (maxRegret == 0)
             {
                 return "";
             }
-            return PathData(_accumRegretHistory.Select(t => (x: t.iteration / _accumRegretHistory.Count * 300.0, y: 200.0 - t.accumRegret / maxRegret * 200.0)).ToArray());
+            return PathData(_accumRegretHistory.Select((r, i) => (x: 20 + (double)i / count * 260.0, y: 280.0 - r / maxRegret * 260.0)).ToArray());
         }
         else
         {
@@ -202,15 +206,12 @@ else
 
     private string PathData((double x, double y)[] Points)
     {
-        var result = "";
+        var sb = new StringBuilder();
         if (Points.Length >= 2)
         {
-            result = $"M {Points[0].x.AsString()} {Points[0].y.AsString()} ";
-            for (int i = 1; i < Points.Length; i++)
-            {
-                result += $"L {Points[i].x.AsString()} {Points[i].y.AsString()} ";
-            }
+            sb.Append($"M {(int)Points[0].x} {(int)Points[0].y} ");
+            sb.AppendJoin("", Points[1..].Select(p => $"L {(int)p.x} {(int)p.y} "));
         }
-        return result;
+        return sb.ToString();
     }
 }
