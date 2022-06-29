@@ -40,12 +40,13 @@ public class Exp3 : IBanditAlgorithm
         int sample = cumProbabilities.TakeWhile(cum => cum < rand).Count();
 
         _lastDrawnProbability = probabilities.ElementAt(sample);
+        Console.WriteLine(probabilities.Sum());
         return sample;
     }
 
     public void GiveReward(int action, double feedback)
     {
         double EstimatedReward = feedback / _lastDrawnProbability;
-        Weights[action] += Gamma * EstimatedReward / K;
+        Weights[action] += EstimatedReward;
     }
 }

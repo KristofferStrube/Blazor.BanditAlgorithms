@@ -60,8 +60,8 @@ else
         <div class="col col-sm-6">
             <svg width="300" height="200">
                 <path stroke="red"
-                    stroke-width="2"
-                    fill="none"
+                  stroke-width="2"
+                  fill="none"
                   d="@RegretLine()">
 
                 </path>
@@ -174,6 +174,10 @@ else
         if (_accumRegretHistory.Count > 2)
         {
             var maxRegret = _accumRegretHistory.Max(_ => _.accumRegret);
+            if (maxRegret == 0)
+            {
+                return "";
+            }
             return PathData(_accumRegretHistory.Select(t => (x: t.iteration / _accumRegretHistory.Count * 300.0, y: 200.0 - t.accumRegret / maxRegret * 200.0)).ToArray());
         }
         else
@@ -184,18 +188,14 @@ else
 
     private string PathData((double x, double y)[] Points)
     {
-        // Parameter for smoothness of path in interval [0, 0.5]
-        double smoothness = 1.0 / 3.0;
-
         var result = "";
         if (Points.Length >= 2)
         {
             result = $"M {Points[0].x.AsString()} {Points[0].y.AsString()} ";
-            for (int i = 1; i < Points.Length - 1; i++)
+            for (int i = 1; i < Points.Length; i++)
             {
-                result += $"S {(Points[i - 1].x * smoothness / 2 + Points[i].x - Points[i + 1].x * smoothness / 2).AsString()} {(Points[i - 1].y * smoothness / 2 + Points[i].y - Points[i + 1].y * smoothness / 2).AsString()} {Points[i].x.AsString()} {Points[i].y.AsString()} ";
+                result += $"L {Points[i].x.AsString()} {Points[i].y.AsString()} ";
             }
-            result += $"S {(Points[^2].x * smoothness + Points[^1].x * (1 - smoothness)).AsString()} {(Points[^2].y * smoothness + Points[^1].y * (1 - smoothness)).AsString()} {Points[^1].x.AsString()} {Points[^1].y.AsString()} ";
         }
         return result;
     }
