@@ -35,37 +35,50 @@ else
     <br />
     <br />
     <div class="row">
-        <div class="col col-sm-6">
+        <div class="col col-sm-4">
             <button class="btn btn-primary" @onclick=Iterate>Make One Iteration</button>
             <br />
             <br />
             @if (_iterating)
             {
-                <button class="btn btn-primary" @onclick="() => _iterating = false">Stop Iterating</button>
+                <button class="btn btn-warning" @onclick="() => _iterating = false">Stop Iterating</button>
             }
             else
             {
-                <button class="btn btn-primary" @onclick=KeepIterating>Keep Iterating</button>
+                <button class="btn btn-success" @onclick=KeepIterating>Keep Iterating</button>
             }
             <label for="delay">&nbsp;delay (ms):</label>
             <input id="delay" @bind-value="_delay" type="number" style="width:100px;" step="any" />
             <br />
             <br />
+            @if (_showRegretPlot)
+            {
+                <button class="btn btn-info" @onclick="() => {_showRegretPlot = false; StateHasChanged();}">Hide Regret Plot</button>
+            }
+            else
+            {
+                <button class="btn btn-" @onclick="() => {_showRegretPlot = true; StateHasChanged();}">Show Regret Plot</button>
+            }
+        </div>
+        <div class="col col-sm-4">
             <b>Iterations:</b> @_iterations
             <br />
             <b>Accumulative Regret:</b> @string.Format("{0:0.000}", _accumRegret)
             <br />
             <b>Average Regret pr. Iteration:</b> @string.Format("{0:0.000}", _accumRegret/_iterations)
         </div>
-        <div class="col col-sm-6">
-            <svg width="300" height="200">
-                <path stroke="red"
+        <div class="col col-sm-4">
+            @if (_showRegretPlot)
+            {
+                <svg width="300" height="200">
+                    <path stroke="red"
                   stroke-width="2"
                   fill="none"
                   d="@RegretLine()">
 
-                </path>
-            </svg>
+                    </path>
+                </svg>
+            }
         </div>
     </div>
     <br />
@@ -128,6 +141,7 @@ else
     private double _accumDelay = 0;
 
     private List<(double iteration, double accumRegret)> _accumRegretHistory = new();
+    private bool _showRegretPlot = true;
 
     private void Initialize()
     {
