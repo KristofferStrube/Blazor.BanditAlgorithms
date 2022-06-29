@@ -46,7 +46,6 @@ public class Exp3 : IBanditAlgorithm
     public void GiveReward(int action, double feedback)
     {
         double EstimatedReward = feedback / _lastDrawnProbability;
-        double newWeight = Gamma * (_lastDrawnProbability + EstimatedReward) / K;
-        Weights[action] = newWeight;
+        Weights[action] += Gamma * EstimatedReward / K;
     }
 }

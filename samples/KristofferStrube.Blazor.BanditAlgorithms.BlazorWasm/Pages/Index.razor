@@ -76,7 +76,7 @@ else
             <rect x="@(((i * 3 + 1) * 100.0 / (_banditAlgorithm.K * 3)).AsString())vw"
           y="0"
           width="@((100.0 / (_banditAlgorithm.K * 3)).AsString())vw"
-          height="@((300.0 * (Math.Log(_banditAlgorithm.Weights[i]) - Math.Log(_banditAlgorithm.Weights.Min())) / (Math.Log(_banditAlgorithm.Weights.Max()) - Math.Log(_banditAlgorithm.Weights.Min()))).AsString())"
+          height="@((300.0 * _banditAlgorithm.Weights[i] / _banditAlgorithm.Weights.Max()).AsString())"
           fill="red">
             </rect>
             <text>
