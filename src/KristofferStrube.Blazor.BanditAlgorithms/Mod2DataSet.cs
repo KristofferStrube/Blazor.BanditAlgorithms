@@ -22,7 +22,7 @@ public class Mod2DataSet : IDataSet
     public (double reward, double regret) Choose(int action)
     {
         _round++;
-        NormalizedRewards = Enumerable.Range(0, _k).Select(i => i % 2 == 0 ? (_round/2000 % 2) : (_round / 2000 + 1) % 2.0).ToArray();
+        NormalizedRewards = Enumerable.Range(0, _k).Select(i => i % 2 == 0 ? (_round/1000 % 2) : (_round / 1000 + 1) % 2.0).ToArray();
         return (NormalizedRewards[action], 1 - NormalizedRewards[action]);
     }
 }

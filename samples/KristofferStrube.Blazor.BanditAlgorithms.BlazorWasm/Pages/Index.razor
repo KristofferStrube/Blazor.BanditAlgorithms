@@ -5,7 +5,7 @@
 @if (_banditAlgorithm is null)
 {
     <text>
-    Please configure the experiments for your liking.
+        Please configure the experiments for your liking.
     </text>
     <br />
     <br />
@@ -28,32 +28,46 @@
     <button class="btn btn-primary" @onclick=Initialize>Initialize Weights</button>
 }
 else
-{   
+{
     <text>
-    The following is a setup with @(_dataSet is StaticDataSet ? "Static Dataset" : "Mod2 Experiment that alternates every 2000 rounds") where Exp3 (k=@_k, gamma=@_gamma) then tries to exploit the actions that gives the best rewards while still exploring all to see if some change to be better over time.
+        The following is a setup with @(_dataSet is StaticDataSet ? "Static Dataset" : "Mod2 Experiment that alternates every 1000 rounds") where Exp3 (k=@_k, gamma=@_gamma) then tries to exploit the actions that gives the best rewards while still exploring all to see if some change to be better over time.
     </text>
     <br />
     <br />
-    <button class="btn btn-primary" @onclick=Iterate>Make One Iteration</button>
-    <br />
-    <br />
-    @if (_iterating)
-    {
-        <button class="btn btn-primary" @onclick="() => _iterating = false">Stop Iterating</button>
-    }
-    else
-    {
-        <button class="btn btn-primary" @onclick=KeepIterating>Keep Iterating</button>
-    }
-    <label for="delay">&nbsp;delay (ms):</label>
-    <input id="delay" @bind-value="_delay" type="number" style="width:100px;" step="any" />
-    <br />
-    <br />
-    <b>Iterations:</b> @_iterations
-    <br />
-    <b>Accumulative Regret:</b> @string.Format("{0:0.000}", _accumRegret)
-    <br />
-    <b>Average Regret pr. Iteration:</b> @string.Format("{0:0.000}", _accumRegret/_iterations)
+    <div class="row">
+        <div class="col col-sm-6">
+            <button class="btn btn-primary" @onclick=Iterate>Make One Iteration</button>
+            <br />
+            <br />
+            @if (_iterating)
+            {
+                <button class="btn btn-primary" @onclick="() => _iterating = false">Stop Iterating</button>
+            }
+            else
+            {
+                <button class="btn btn-primary" @onclick=KeepIterating>Keep Iterating</button>
+            }
+            <label for="delay">&nbsp;delay (ms):</label>
+            <input id="delay" @bind-value="_delay" type="number" style="width:100px;" step="any" />
+            <br />
+            <br />
+            <b>Iterations:</b> @_iterations
+            <br />
+            <b>Accumulative Regret:</b> @string.Format("{0:0.000}", _accumRegret)
+            <br />
+            <b>Average Regret pr. Iteration:</b> @string.Format("{0:0.000}", _accumRegret/_iterations)
+        </div>
+        <div class="col col-sm-6">
+            <svg width="300" height="200">
+                <path stroke="red"
+                    stroke-width="2"
+                    fill="none"
+                  d="@RegretLine()">
+
+                </path>
+            </svg>
+        </div>
+    </div>
     <br />
     <br />
     <h2>Rewards</h2>
@@ -100,7 +114,7 @@ else
     private List<(string name, int id)> _datasets = new()
     {
         ("Static Dataset", 0),
-        ("Mod2 for 2000 rounds Dataset", 1),
+        ("Mod2 for 1000 rounds Dataset", 1),
     };
 
     private IBanditAlgorithm _banditAlgorithm;
@@ -112,6 +126,8 @@ else
 
     private double _delay = 1;
     private double _accumDelay = 0;
+
+    private List<(double iteration, double accumRegret)> _accumRegretHistory = new();
 
     private void Initialize()
     {
@@ -129,6 +145,7 @@ else
         var (reward, regret) = _dataSet.Choose(action);
         _banditAlgorithm.GiveReward(action, reward);
         _accumRegret += regret;
+        _accumRegretHistory.Add((_iterations, _accumRegret));
         _iterations++;
         StateHasChanged();
     }
@@ -150,5 +167,36 @@ else
                 Iterate();
             }
         });
+    }
+
+    private string RegretLine()
+    {
+        if (_accumRegretHistory.Count > 2)
+        {
+            var maxRegret = _accumRegretHistory.Max(_ => _.accumRegret);
+            return PathData(_accumRegretHistory.Select(t => (x: t.iteration / _accumRegretHistory.Count * 300.0, y: 200.0 - t.accumRegret / maxRegret * 200.0)).ToArray());
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    private string PathData((double x, double y)[] Points)
+    {
+        // Parameter for smoothness of path in interval [0, 0.5]
+        double smoothness = 1.0 / 3.0;
+
+        var result = "";
+        if (Points.Length >= 2)
+        {
+            result = $"M {Points[0].x.AsString()} {Points[0].y.AsString()} ";
+            for (int i = 1; i < Points.Length - 1; i++)
+            {
+                result += $"S {(Points[i - 1].x * smoothness / 2 + Points[i].x - Points[i + 1].x * smoothness / 2).AsString()} {(Points[i - 1].y * smoothness / 2 + Points[i].y - Points[i + 1].y * smoothness / 2).AsString()} {Points[i].x.AsString()} {Points[i].y.AsString()} ";
+            }
+            result += $"S {(Points[^2].x * smoothness + Points[^1].x * (1 - smoothness)).AsString()} {(Points[^2].y * smoothness + Points[^1].y * (1 - smoothness)).AsString()} {Points[^1].x.AsString()} {Points[^1].y.AsString()} ";
+        }
+        return result;
     }
 }
