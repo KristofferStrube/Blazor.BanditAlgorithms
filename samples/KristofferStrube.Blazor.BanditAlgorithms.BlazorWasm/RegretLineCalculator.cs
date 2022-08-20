@@ -9,12 +9,13 @@ public class RegretLineCalculator
         var count = regrets.Length;
         if (count > 2)
         {
+            var minRegret = regrets.Min();
             var maxRegret = regrets.Max();
             if (maxRegret == 0)
             {
                 return "";
             }
-            return PathData(regrets.Select((r, i) => (x: 20 + (double)i / count * 260.0, y: 280.0 - r / maxRegret * 260.0)).ToArray());
+            return PathData(regrets.Select((r, i) => (x: 20 + (double)i / count * 260.0, y: 280.0 - (r - minRegret) / (maxRegret - minRegret) * 260.0)).ToArray());
         }
         else
         {

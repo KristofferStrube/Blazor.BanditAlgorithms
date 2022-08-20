@@ -36,7 +36,7 @@ else
     <br />
     <br />
     <div class="row">
-        <div class="col col-sm-4">
+        <div class="col col-md-4">
             <button class="btn btn-primary" @onclick=Iterate>Make One Iteration</button>
             <br />
             <br />
@@ -52,30 +52,56 @@ else
             <input id="delay" @bind-value="_delay" type="number" style="width:100px;" step="any" />
             <br />
             <br />
-            @if (_showRegretPlot)
+            @if (_showWeakRegretPlot)
             {
-                <button class="btn btn-info" @onclick="() => {_showRegretPlot = false; StateHasChanged();}">Hide Regret Plot</button>
+                <button class="btn text-light" style="background-color:blue;" @onclick="() => {_showWeakRegretPlot = false; StateHasChanged();}">Hide Weak Regret Plot</button>
             }
             else
             {
-                <button class="btn btn-info" @onclick="() => {_showRegretPlot = true; KeepShowingRegretPlot(); StateHasChanged();}">Show Regret Plot</button>
+                <button class="btn text-light" style="background-color:blue;" @onclick="() => {_showWeakRegretPlot = true; StateHasChanged();}">Show Weak Regret Plot</button>
             }
-        </div>
-        <div class="col col-sm-4">
+            @if (_showStrongRegretPlot)
+            {
+                <button class="btn text-light px-2" style="background-color:green;" @onclick="() => {_showStrongRegretPlot = false; StateHasChanged();}">Hide Strong Regret Plot</button>
+            }
+            else
+            {
+                <button class="btn text-light px-2" style="background-color:green;" @onclick="() => {_showStrongRegretPlot = true; StateHasChanged();}">Show Strong Regret Plot</button>
+            }
+            <br />
+            <br />
             <b>Iterations:</b> @_iterations
             <br />
-            <b>Accumulative Regret:</b> @string.Format("{0:0.000}", _accumRegret)
+            <b>Weak Regret:</b> @string.Format("{0:0.000}", _weakRegretHistory.Count > 0 ? _weakRegretHistory.Last() : 0)
             <br />
-            <b>Average Regret pr. Iteration:</b> @string.Format("{0:0.000}", _accumRegret/_iterations)
+            <b>Strong Regret:</b> @string.Format("{0:0.000}", _strongRegretHistory.Count > 0 ? _strongRegretHistory.Last() : 0)
+            <br />
+            <b>Average Weak Regret pr. Iteration:</b> @string.Format("{0:0.000}",  (_weakRegretHistory.Count > 0 ? _weakRegretHistory.Last() : 0)/_iterations)
+            <br />
+            <b>Average Strong Regret pr. Iteration:</b> @string.Format("{0:0.000}", (_strongRegretHistory.Count > 0 ? _strongRegretHistory.Last() : 0)/_iterations)
+        
         </div>
-        <div class="col col-sm-4">
-            @if (_showRegretPlot)
+        <div class="col col-md-4">
+            @if (_showWeakRegretPlot)
             {
                 <svg width="300" height="300">
-                    <path stroke="red"
+                    <path stroke="blue"
                   stroke-width="1"
                   fill="none"
-                  d="@_regretPathData">
+                  d="@_weakRegretPathData">
+
+                    </path>
+                </svg>
+            }
+        </div>
+        <div class="col col-md-4">
+            @if (_showStrongRegretPlot)
+            {
+                <svg width="300" height="300">
+                    <path stroke="green"
+                  stroke-width="1"
+                  fill="none"
+                  d="@_strongRegretPathData">
 
                     </path>
                 </svg>
@@ -138,15 +164,17 @@ else
 
     private bool _iterating;
     private int _iterations;
-    private double _accumRegret;
 
     private double _delay = 1;
     private double _accumDelay = 0;
 
-    private List<double> _accumRegretHistory = new();
-    private bool _showRegretPlot = true;
+    private List<double> _weakRegretHistory = new();
+    private List<double> _strongRegretHistory = new();
+    private bool _showWeakRegretPlot = true;
+    private bool _showStrongRegretPlot = true;
     private IWorkerBackgroundService<RegretLineCalculator> _service;
-    private string _regretPathData = "";
+    private string _weakRegretPathData = "";
+    private string _strongRegretPathData = "";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -176,10 +204,10 @@ else
     private async Task Iterate()
     {
         var action = _banditAlgorithm.Choose();
-        var (reward, regret) = _dataSet.Choose(action);
+        var (reward, weakRegret, strongRegret) = _dataSet.Choose(action);
         _banditAlgorithm.GiveReward(action, reward);
-        _accumRegret += regret;
-        _accumRegretHistory.Add(_accumRegret);
+        _weakRegretHistory.Add(weakRegret);
+        _strongRegretHistory.Add(strongRegret);
         _iterations++;
         StateHasChanged();
     }
@@ -205,14 +233,22 @@ else
 
     private async Task KeepShowingRegretPlot()
     {
-        _regretPathData = "";
+        _weakRegretPathData = "";
         await Task.Run(async () =>
         {
-            while (_showRegretPlot)
+            while (true)
             {
                 await Task.Delay(10);
-                var localParameter = _accumRegretHistory.ToArray();
-                _regretPathData = await _service.RunAsync(s => s.RegretLine(localParameter));
+                if (_showWeakRegretPlot)
+                {
+                    var localParameter = _weakRegretHistory.ToArray();
+                    _weakRegretPathData = await _service.RunAsync(s => s.RegretLine(localParameter));
+                }
+                if (_showStrongRegretPlot)
+                {
+                    var localParameter = _strongRegretHistory.ToArray();
+                    _strongRegretPathData = await _service.RunAsync(s => s.RegretLine(localParameter));
+                }
             }
         });
     }
