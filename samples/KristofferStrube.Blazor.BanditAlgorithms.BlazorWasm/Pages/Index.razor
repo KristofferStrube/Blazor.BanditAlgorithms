@@ -131,7 +131,7 @@ else
           y="0"
           width="@((100.0 / (_banditAlgorithm.K * 3)).AsString())vw"
           height="@((300.0 * _banditAlgorithm.Weights[i] / _banditAlgorithm.Weights.Max()).AsString())"
-          fill="red">
+          fill="@(action == i ? "green" : "red")">
             </rect>
             <text>
                 <text x="5"
@@ -165,6 +165,8 @@ else
 
     private bool _iterating;
     private int _iterations;
+
+    private int action;
 
     private double _delay = 1;
     private double _accumDelay = 0;
@@ -205,7 +207,7 @@ else
 
     private void Iterate()
     {
-        var action = _banditAlgorithm.Choose();
+        action = _banditAlgorithm.Choose();
         var (reward, weakRegret, strongRegret) = _dataSet.Choose(action);
         _banditAlgorithm.GiveReward(action, reward);
         _weakRegretHistory.Add(weakRegret);
