@@ -155,8 +155,9 @@ else
 
     private List<(string name, int id)> _datasets = new()
     {
-        ("Static Dataset", 0),
-        ("Mod2 for 1000 rounds Dataset", 1),
+        ("Mod2 for 1000 rounds Dataset", 0),
+        ("Static Dataset", 1),
+        ("Randomized Datset", 2),
     };
 
     private IBanditAlgorithm _banditAlgorithm;
@@ -196,12 +197,13 @@ else
         _banditAlgorithm = new Exp3(_k, _gamma);
         _dataSet = _chosenDataset switch
         {
-            0 => new StaticDataSet(Enumerable.Range(0, _k).Select(_ => Random.Shared.NextDouble()).OrderBy(x => x).ToArray()),
-            _ => new Mod2DataSet(_k)
+            0 => new Mod2DataSet(_k),
+            1 => new StaticDataSet(Enumerable.Range(0, _k).Select(_ => Random.Shared.NextDouble()).OrderBy(x => x).ToArray()),
+            _ => new RandomDataSet(_k)
         };
     }
 
-    private async Task Iterate()
+    private void Iterate()
     {
         var action = _banditAlgorithm.Choose();
         var (reward, weakRegret, strongRegret) = _dataSet.Choose(action);
@@ -226,7 +228,7 @@ else
                     await Task.Delay((int)_accumDelay);
                     _accumDelay = _accumDelay % 1;
                 }
-                await Iterate();
+                Iterate();
             }
         });
     }
