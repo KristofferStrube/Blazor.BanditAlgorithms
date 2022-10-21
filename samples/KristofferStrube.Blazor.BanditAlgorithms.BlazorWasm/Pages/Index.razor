@@ -1,5 +1,4 @@
 ﻿@page "/"
-@inject IWorkerFactory workerFactory
 
 <PageTitle>Exp3</PageTitle>
 
@@ -79,14 +78,17 @@ else
             <b>Average Weak Regret pr. Iteration:</b> @string.Format("{0:0.000}",  (_weakRegretHistory.Count > 0 ? _weakRegretHistory.Last() : 0)/_iterations)
             <br />
             <b>Average Strong Regret pr. Iteration:</b> @string.Format("{0:0.000}", (_strongRegretHistory.Count > 0 ? _strongRegretHistory.Last() : 0)/_iterations)
-        
+
         </div>
         <div class="col col-md-4">
             @if (_showWeakRegretPlot)
             {
-                <svg width="300" height="300">
+                <svg width="300"
+             height="300"
+             viewBox="0 @((-_largestWeakRegret).AsString()) @_weakRegretHistory.Count @((_largestWeakRegret-_smallestWeakRegret).AsString())"
+             preserveAspectRatio="none">
                     <path stroke="blue"
-                  stroke-width="1"
+                  stroke-width="2"
                   fill="none"
                   d="@_weakRegretPathData">
 
@@ -97,9 +99,12 @@ else
         <div class="col col-md-4">
             @if (_showStrongRegretPlot)
             {
-                <svg width="300" height="300">
+                <svg width="300"
+             height="300"
+             viewBox="0 @((-_largestStrongRegret).AsString()) @_strongRegretHistory.Count @((_largestStrongRegret-_smallestStrongRegret).AsString())"
+             preserveAspectRatio="none">
                     <path stroke="green"
-                  stroke-width="1"
+                  stroke-width="2"
                   fill="none"
                   d="@_strongRegretPathData">
 
@@ -175,22 +180,17 @@ else
     private List<double> _strongRegretHistory = new();
     private bool _showWeakRegretPlot = true;
     private bool _showStrongRegretPlot = true;
-    private IWorkerBackgroundService<RegretLineCalculator> _service;
-    private string _weakRegretPathData = "";
-    private string _strongRegretPathData = "";
+    private string _weakRegretPathData = "M 0 0";
+    private string _strongRegretPathData = "M 0 0";
+    private double _largestWeakRegret = 0;
+    private double _smallestWeakRegret = 0;
+    private double _largestStrongRegret = 0;
+    private double _smallestStrongRegret = 0;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Create worker.
-            var worker = await workerFactory.CreateAsync();
-
-            // Create service reference. For most scenarios, it's safe (and best) to keep this
-            // reference around somewhere to avoid the startup cost.
-            _service = await worker.CreateBackgroundServiceAsync<RegretLineCalculator>();
-
-            await KeepShowingRegretPlot();
         }
     }
 
@@ -212,6 +212,12 @@ else
         _banditAlgorithm.GiveReward(action, reward);
         _weakRegretHistory.Add(weakRegret);
         _strongRegretHistory.Add(strongRegret);
+        _largestWeakRegret = Math.Max(_largestWeakRegret, weakRegret);
+        _smallestWeakRegret = Math.Min(_smallestWeakRegret, weakRegret);
+        _largestStrongRegret = Math.Max(_largestStrongRegret, strongRegret);
+        _smallestStrongRegret = Math.Min(_smallestStrongRegret, strongRegret);
+        _weakRegretPathData += $"L{_weakRegretHistory.Count} {(-weakRegret).AsString()}";
+        _strongRegretPathData += $"L{_strongRegretHistory.Count} {(-strongRegret).AsString()}";
         _iterations++;
         StateHasChanged();
     }
@@ -231,28 +237,6 @@ else
                     _accumDelay = _accumDelay % 1;
                 }
                 Iterate();
-            }
-        });
-    }
-
-    private async Task KeepShowingRegretPlot()
-    {
-        _weakRegretPathData = "";
-        await Task.Run(async () =>
-        {
-            while (true)
-            {
-                await Task.Delay(10);
-                if (_showWeakRegretPlot)
-                {
-                    var localParameter = _weakRegretHistory.ToArray();
-                    _weakRegretPathData = await _service.RunAsync(s => s.RegretLine(localParameter));
-                }
-                if (_showStrongRegretPlot)
-                {
-                    var localParameter = _strongRegretHistory.ToArray();
-                    _strongRegretPathData = await _service.RunAsync(s => s.RegretLine(localParameter));
-                }
             }
         });
     }
